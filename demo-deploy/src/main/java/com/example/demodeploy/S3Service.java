@@ -1,0 +1,37 @@
+package com.example.demodeploy;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+
+@Service
+public class S3Service {
+    private final S3Client s3;
+
+    public S3Service(@Value("${aws.region}") String region) {
+        this.s3 = S3Client.builder()
+                .region(Region.of(region)) // Replace with your region
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .build();
+    }
+
+    public String uploadDummyFile(String bucketName, String key) {
+        String content = "Deployed at: " + Instant.now();
+
+        PutObjectRequest putRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+        s3.putObject(putRequest, RequestBody.fromBytes(content.getBytes(StandardCharsets.UTF_8)));
+
+        return "https://s3.eu-central-1.amazonaws.com/" + bucketName + "/" + key;
+    }
+}
