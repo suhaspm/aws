@@ -14,6 +14,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         
+      - name: List all files
+        run: ls -la
+        
       - name: List files
         run: ls -la demo-deploy
 
