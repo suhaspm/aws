@@ -22,4 +22,4 @@ jobs:
 
       - name: Build with Maven
         run: mvn clean package -DskipTests
-        working-directory: ./demo-deploy
+        working-directory: demo-deploy
