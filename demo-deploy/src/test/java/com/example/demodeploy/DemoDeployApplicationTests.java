@@ -1,4 +1,4 @@
-package com.example.demo_deploy;
+package com.example.demodeploy;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
