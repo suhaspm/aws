@@ -2,12 +2,15 @@ package com.example.demodeploy;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
@@ -34,4 +37,22 @@ public class S3Service {
 
         return "https://s3.eu-central-1.amazonaws.com/" + bucketName + "/" + key;
     }
+
+    public String uploadFile(MultipartFile file, String deploymentId) throws IOException {
+    String fileName = deploymentId + "_" + file.getOriginalFilename();
+    String bucketName = "lambda-upload-trigger-dev"; 
+
+    PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+            .bucket(bucketName)
+            .key(fileName)
+            .contentType(file.getContentType())
+            .build();
+
+    s3.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+
+    // Manually construct the public S3 URL
+    return "https://" + bucketName + ".s3." + "eu-central-1" + ".amazonaws.com/" + fileName;
+
+}
+
 }

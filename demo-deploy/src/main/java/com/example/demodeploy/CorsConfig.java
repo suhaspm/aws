@@ -14,7 +14,12 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")    // Allow CORS for all endpoints
-                        .allowedOrigins("http://localhost:5173");  // Your React app URL
+                        .allowedOrigins("https://3.77.73.3:3000")
+                        .allowedOrigins("http://localhost:5173") // Explicitly set the frontend origin for security
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD") // Add all methods you use, including OPTIONS for preflight
+                        .allowedHeaders("*") // Allow all headers
+                        .allowCredentials(false) // Set to true if you need cookies/auth headers, otherwise false. False is often safer for simple cases.
+                        .maxAge(3600);
             }
         };
     }

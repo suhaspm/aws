@@ -2,8 +2,16 @@ package com.example.demodeploy;
 
 import com.example.demodeploy.DynamoDBService;
 import com.example.demodeploy.S3Service;
-import org.springframework.web.bind.annotation.*;
 
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -30,4 +38,23 @@ public class DeploymentController {
 
         return "Deployment Created. File URL: " + s3Url;
     }
+
+    @GetMapping("/deployments")
+    public List<DeploymentMetadata> getAllDeployments(){
+        String tableName = "FileMetadataTable";
+        return dynamoDBService.getAllDeployments(tableName);
+    }
+
+    @PostMapping("/upload")
+public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+    try {
+        String deploymentId = UUID.randomUUID().toString();
+        String fileUrl = s3Service.uploadFile(file, deploymentId); // method you'll define below
+        dynamoDBService.saveDeploymentMetadata("FileMetadataTable", deploymentId, fileUrl);
+        return ResponseEntity.ok("File uploaded successfully with ID: " + deploymentId);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Upload failed: " + e.getMessage());
+    }
+}
+
 }
