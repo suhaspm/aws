@@ -39,34 +39,20 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: | 
-            echo "Killing old backend app if running..."
-            PID=$(pgrep -f 'demo-deploy-0.0.1-SNAPSHOT.jar')
+            set -e # Exit immediately if a command exits with a non-zero status.
 
-            if [ -n "$PID" ]; then # Check if PID is not empty (process was found)
-              echo "Found running JAR process with PID: $PID. Killing it gracefully..."
-              # Attempt to kill gracefully, using '|| true' to prevent 'set -e' from failing the script
-              # if 'kill' itself returns non-zero (e.g., if the process just died).
-              kill "$PID" || true
-              
-              # Give it a moment to shut down cleanly
-              sleep 5
-              
-              # Check if the process is still running after the graceful kill
-              if pgrep -f 'demo-deploy-00.1-SNAPSHOT.jar' > /dev/null; then
-                  echo "Process still running after graceful kill. Forcing shutdown (kill -9)."
-                  # Force kill if necessary, again with '|| true'
-                  kill -9 "$PID" || true
-              fi
-              echo "Old backend app killed successfully."
-            else
-              echo "No old backend app found running. Continuing."
+            echo "Attempting to kill old backend app if running..."
+            ( pkill -f 'demo-deploy-0.0.1-SNAPSHOT.jar' || true )
+
+            sleep 5
+            if pgrep -f 'demo-deploy-00.1-SNAPSHOT.jar' > /dev/null; then
+                echo "Process still running after graceful kill. Forcing shutdown (kill -9)."
+                ( kill -9 "$(pgrep -f 'demo-deploy-00.1-SNAPSHOT.jar')" || true )
             fi
 
+            echo "Old backend app cleanup attempted."
+
             echo "Running new backend app..."
-            nohup /usr/bin/java -jar ~/demo-deploy-0.0.1-SNAPSHOT.jar > ~/backend.log 2>&1 &
+            nohup /usr/bin/java -jar /home/ec2-user/demo-deploy-00.1-SNAPSHOT.jar > /home/ec2-user/backend.log 2>&1 &
 
-            # --- IMPORTANT ---
-            # Add 'true' as the last command in this script block.
-            true 
-
-
+            true
