@@ -64,15 +64,15 @@ jobs:
             sudo systemctl stop backend-app.service || true
 
             echo "Starting new backend service..."
-            sudo systemctl start your-backend-app.service
+            sudo systemctl start backend-app.service
 
             echo "Checking backend service status..."
             # Give it a moment to start up
             sleep 10
             # Check if the service is active. If not, print logs and fail the CI/CD step.
-            if ! sudo systemctl is-active --quiet your-backend-app.service; then
+            if ! sudo systemctl is-active --quiet backend-app.service; then
               echo "Backend service failed to start! Printing last 50 lines of journalctl logs:"
-              sudo journalctl -u your-backend-app.service --no-pager -n 50
+              sudo journalctl -u backend-app.service --no-pager -n 50
               exit 1 # Fail the GitHub Actions step
             fi
             echo "Backend service started successfully."
