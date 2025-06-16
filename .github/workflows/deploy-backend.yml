@@ -41,20 +41,30 @@ jobs:
           script: | 
             echo "Killing old backend app if running..."
             PID=$(pgrep -f 'demo-deploy-0.0.1-SNAPSHOT.jar')
-            if [ -n "$PID" ]; then
-              echo "Found running JAR process with PID: $PID. Killing it."
-              kill "$PID" # Send TERM signal (default)
+
+            if [ -n "$PID" ]; then # Check if PID is not empty (process was found)
+              echo "Found running JAR process with PID: $PID. Killing it gracefully..."
+              # Attempt to kill gracefully, using '|| true' to prevent 'set -e' from failing the script
+              # if 'kill' itself returns non-zero (e.g., if the process just died).
+              kill "$PID" || true
+              
               # Give it a moment to shut down cleanly
               sleep 5
-              # Optional: check if it's still running
-              if pgrep -f 'demo-deploy-0.0.1-SNAPSHOT.jar' > /dev/null; then
-                  echo "Process still running after graceful kill. Forcing shutdown."
-                  kill -9 "$PID" # Send KILL signal
+              
+              # Check if the process is still running after the graceful kill
+              if pgrep -f 'demo-deploy-00.1-SNAPSHOT.jar' > /dev/null; then
+                  echo "Process still running after graceful kill. Forcing shutdown (kill -9)."
+                  # Force kill if necessary, again with '|| true'
+                  kill -9 "$PID" || true
               fi
-              echo "Old backend app killed."
+              echo "Old backend app killed successfully."
             else
-              echo "No old backend app found running."
+              echo "No old backend app found running. Continuing."
             fi
+
+            # --- IMPORTANT ---
+            # Add 'true' as the last command in this script block.
+            true 
 
             echo "Running new backend app..."
             nohup java -jar demo-deploy-0.0.1-SNAPSHOT.jar > ~/backend.log 2>&1 &
