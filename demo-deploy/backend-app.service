@@ -1,0 +1,18 @@
+# demo-deploy/your-backend-app.service
+[Unit]
+Description=My Spring Boot Backend Application
+After=network.target
+
+[Service]
+User=ec2-user
+# Group=ec2-user # Uncomment if you want to set a group
+# Path to your Java executable. Use absolute path.
+ExecStart=/usr/bin/java -jar /home/ec2-user/demo-deploy-0.0.1-SNAPSHOT.jar
+SuccessExitStatus=143 # Important: Spring Boot often exits with 143 on graceful TERM signal
+Restart=on-failure
+RestartSec=10
+StandardOutput=file:/home/ec2-user/backend-app.log
+StandardError=inherit
+
+[Install]
+WantedBy=multi-user.target

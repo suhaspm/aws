@@ -32,6 +32,15 @@ jobs:
           source: "./demo-deploy/target/demo-deploy-0.0.1-SNAPSHOT.jar"
           target: "~/"
 
+      - name: Copy Systemd Service File to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "./demo-deploy/backend-app.service" # Path to your service file in repo
+          target: "~/backend-app.service"
+
       - name: SSH and Run jar on EC2
         uses: appleboy/ssh-action@v1.0.3
         with: 
@@ -41,18 +50,30 @@ jobs:
           script: | 
             set -e # Exit immediately if a command exits with a non-zero status.
 
-            echo "Attempting to kill old backend app if running..."
-            ( pkill -f 'demo-deploy-0.0.1-SNAPSHOT.jar' || true )
+            echo "Installing/Updating Systemd Service File..."
+            sudo mv ~/backend-app.service /etc/systemd/system/backend-app.service
 
-            sleep 5
-            if pgrep -f 'demo-deploy-00.1-SNAPSHOT.jar' > /dev/null; then
-                echo "Process still running after graceful kill. Forcing shutdown (kill -9)."
-                ( kill -9 "$(pgrep -f 'demo-deploy-00.1-SNAPSHOT.jar')" || true )
+            # Reload systemd to recognize the new/changed service file
+            sudo systemctl daemon-reload
+
+            # Enable the service (so it starts on boot) - idempotent, safe to run every time
+            sudo systemctl enable backend-app.service
+
+            echo "Stopping old backend service (if running)..."
+            # Stop the service gracefully. '|| true' allows it to not fail if service wasn't running.
+            sudo systemctl stop backend-app.service || true
+
+            echo "Starting new backend service..."
+            sudo systemctl start your-backend-app.service
+
+            echo "Checking backend service status..."
+            # Give it a moment to start up
+            sleep 10
+            # Check if the service is active. If not, print logs and fail the CI/CD step.
+            if ! sudo systemctl is-active --quiet your-backend-app.service; then
+              echo "Backend service failed to start! Printing last 50 lines of journalctl logs:"
+              sudo journalctl -u your-backend-app.service --no-pager -n 50
+              exit 1 # Fail the GitHub Actions step
             fi
-
-            echo "Old backend app cleanup attempted."
-
-            echo "Running new backend app..."
-            nohup /usr/bin/java -jar /home/ec2-user/demo-deploy-00.1-SNAPSHOT.jar > /home/ec2-user/backend.log 2>&1 &
-
+            echo "Backend service started successfully."
             true
